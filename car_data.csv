@@ -1,0 +1,8 @@
+city_mpg,class,combination_mpg,cylinders,displacement,drive,fuel_type,highway_mpg,make,model,transmission,year,mileage,price
+this field is for premium subscribers only,compact car,this field is for premium subscribers only,4.0,2.0,fwd,gas,this field is for premium subscribers only,audi,a4,a,2010,130000,3000
+this field is for premium subscribers only,subcompact car,this field is for premium subscribers only,4.0,2.0,fwd,gas,this field is for premium subscribers only,audi,a3,a,2018,75000,11000
+this field is for premium subscribers only,large car,this field is for premium subscribers only,4.0,1.5,fwd,gas,this field is for premium subscribers only,honda,civic 5dr,m,2021,33000,17000
+this field is for premium subscribers only,two seater,this field is for premium subscribers only,4.0,2.0,rwd,gas,this field is for premium subscribers only,bmw,z4 sdrive28i,a,2016,50000,16000
+this field is for premium subscribers only,large car,this field is for premium subscribers only,,,awd,electricity,this field is for premium subscribers only,tesla,model s awd - 60d,a,2017,56000,15000
+this field is for premium subscribers only,standard sport utility vehicle,this field is for premium subscribers only,6.0,3.0,rwd,gas,this field is for premium subscribers only,bmw,x5 sdrive40i,a,2023,28000,50000
+this field is for premium subscribers only,standard pickup truck,this field is for premium subscribers only,6.0,4.3,rwd,gas,this field is for premium subscribers only,chevrolet,silverado 2wd,a,2020,10000,47000
