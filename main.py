@@ -16,7 +16,8 @@ from kivy.properties import ObjectProperty
 from data_analyser import perform_data_analysis, generate_cylinders_plot
 import os
 import sys
-
+import joblib # For loading the model
+import pandas as pd # For creating the DataFrame for prediction
 
 # This is the new code to ensure the app always finds its files
 BASE_PATH = os.path.dirname(os.path.abspath(__file__))
@@ -221,6 +222,61 @@ class CarAppMain(MDApp):
         else:
             self.root.ids.status_label.text = "Failed to generate plot. Check if you made any erros"
             self.root.ids.plot_image.source = ""
+
+    def predict_car_price(self):
+        """
+        Loads the saved ML model and predicts the price of the currently displayed car.
+        """
+        if not self.root.current_displayed_car:
+            self.root.ids.status_label.text = "[color=ff0000]Search for a car before predicting.[/color]"
+            return
+
+        try:
+            # 1. Get Mileage Input
+            mileage_str = self.root.ids.mileage_input.text.strip()
+            mileage = int(mileage_str)
+        except ValueError:
+            self.root.ids.status_label.text = "[color=ff0000]Please enter a valid mileage (number).[/color]"
+            return
+
+        try:
+            self.root.ids.status_label.text = "[color=0000ff]Predicting price...[/color]"
+            
+            # Load the model
+            model_path = os.path.join(BASE_PATH, "car_price_model.joblib")
+            model = joblib.load(model_path)
+            
+            car = self.root.current_displayed_car
+            
+            # 2. Prepare Data for Prediction
+            # The model expects a DataFrame with specific columns, even for one row.
+            
+            # Safely convert cylinders/displacement to 0 for electric cars
+            cylinders = int(getattr(car, 'cylinders', 0) or 0)
+            displacement = float(getattr(car, 'displacement', 0.0) or 0.0)
+            
+            input_data = pd.DataFrame({
+                'make': [car.make], 
+                'model': [car.model], 
+                'year': [car.year], 
+                'cylinders': [cylinders],
+                'displacement': [displacement], 
+                'mileage': [mileage]
+            })
+
+            # 3. Make Prediction
+            predicted_price = model.predict(input_data)[0]
+            
+            # 4. Display Result
+            formatted_price = f"${predicted_price:,.2f}"
+            self.root.ids.status_label.text = f"[color=008000]Predicted Price:[/color] [b]{formatted_price}[/b]"
+
+        except FileNotFoundError:
+            self.root.ids.status_label.text = "[color=ff0000]Error: Model file not found. Run price_predictor.py first.[/color]"
+        except Exception as e:
+            self.root.ids.status_label.text = f"[color=ff0000]Prediction failed due to error: {e}[/color]"
+            print(f"Prediction Runtime Error: {e}")
+
 
 
 if __name__ == '__main__':

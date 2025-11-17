@@ -1,0 +1,8 @@
+make,model,year,cylinders,displacement,mileage,price
+audi,a4,2010,4,2.0,130000,3000
+audi,a3,2018,4,2.0,75000,11000
+honda,civic 5dr,2021,4,1.5,33000,17000
+bmw,z4 sdrive28i,2016,4,2.0,50000,16000
+tesla,model s awd - 60d,2017,0,0.0,56000,15000
+bmw,x5 sdrive40i,2023,6,3.0,28000,50000
+chevrolet,silverado 2wd,2020,6,4.3,10000,47000

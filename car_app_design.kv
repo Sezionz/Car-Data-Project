@@ -82,6 +82,35 @@
         theme_text_color: "Secondary"
         markup: True
     
+    # NEW ML PREDICTION SECTION
+    MDBoxLayout:
+        orientation: 'vertical'
+        adaptive_height: True
+        spacing: dp(5)
+        padding: dp(5), 0, dp(5), 0
+
+        MDLabel:
+            text: "[b]Price Prediction[/b] (Enter Mileage of Searched Car)"
+            size_hint_y: None
+            height: dp(30)
+            font_style: 'Body1'
+        
+        MDTextField:
+            id: mileage_input
+            mode: "rectangle"
+            hint_text: "Mileage (e.g., 50000)"
+            input_filter: 'int'
+            size_hint_y: None
+            height: dp(48)
+
+        MDRaisedButton:
+            text: "PREDICT PRICE"
+            size_hint_x: 1
+            height: dp(40)
+            on_release: app.predict_car_price()
+            md_bg_color: app.theme_cls.accent_color
+    # END NEW ML PREDICTION SECTION
+    
     # Car details display with scrolling
     ScrollView:
         MDLabel:
@@ -126,14 +155,14 @@
                 theme_text_color: "Primary"
                 text_size: self.width, None
                 markup: True
-    
+
     MDRaisedButton:
         text: "CLEAR COMPARISON"
         size_hint_x: 1
         height: dp(40)
         on_release: root.clear_comparison()
 
-    # Corrected Analytics Layout
+    # Analytics Plot Section
     MDLabel:
         id: analytics_status_label
         text: 'Click the button to generate and view a plot.'
@@ -146,7 +175,7 @@
         on_release: app.show_analytics_plot()
         size_hint_y: None
         height: dp(50)
-    
+
     Image:
         id: plot_image
         source: ''
