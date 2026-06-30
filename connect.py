@@ -1,4 +1,5 @@
 import sqlite3
+import csv
 
 class CarDatabase:
     def __init__(self, db_name):
@@ -37,6 +38,32 @@ class CarDatabase:
         cursor.execute("DELETE FROM cars WHERE id = ?;", (car_id,))
         self.conn.commit()
 
+    def import_from_csv(self, csv_file):
+        print(f"Importing data from {csv_file}...\n")
+        cursor = self.create_cursor()
+        cursor.execute("CREATE TABLE IF NOT EXISTS vehicle_data (iD INT PRIMARY KEY, make VARCHAR(50), model VARCHAR(50), year INT, mileage INT, price FLOAT);")
+
+        with open(csv_file, 'r') as file:
+            reader = csv.reader(file)
+            next(reader)  # Skip the header row
+            for row in reader:
+                make = row[8]
+                model = row[9]
+                year = int(row[11])
+                mileage = int(row[12])
+                price = float(row[13])
+                cursor.execute("INSERT INTO vehicle_data (make, model, year, mileage, price) VALUES (?, ?, ?, ?, ?);", (make, model, year, mileage, price))
+        self.conn.commit()
+
+
+
+    def verify_data(self):
+        cursor = self.create_cursor()
+        cursor.execute("SELECT * FROM vehicle_data ORDER BY price DESC LIMIT 5 ;")
+        results = cursor.fetchall()
+        for row in results:
+            print(f"make: {row[1]}, model: {row[2]}, year: {row[3]}, price: {row[5]}")
+
 
 
     # 6. Close the connection (Always lock the door on your way out)
@@ -47,5 +74,6 @@ class CarDatabase:
 my_db = CarDatabase('my_first_database.db')
 
 #2. Test the methods
-my_db.filter_by_horsepower(0)
-my_db.update_horsepower(1, 250)
+
+my_db.import_from_csv('car_data.csv')
+my_db.verify_data()

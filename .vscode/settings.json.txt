@@ -1,0 +1,3 @@
+{
+    "python.defaultInterpreterPath": "C:\\Users\\samiu\\Documents\\Coded Programs\\Python\\Car-Data-Project-master\\car_data_env\\Scripts\\python.exe"
+}
