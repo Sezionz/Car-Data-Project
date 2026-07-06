@@ -13,7 +13,7 @@ from kivymd.uix.textfield import MDTextField
 from kivy.uix.scrollview import ScrollView
 from kivy.metrics import dp
 from kivy.properties import ObjectProperty
-from data_analyser import perform_data_analysis, generate_cylinders_plot
+from src.data_analyser import perform_data_analysis, generate_cylinders_plot
 import os
 import sys
 import joblib # For loading the model
@@ -26,7 +26,7 @@ BASE_PATH = os.path.dirname(os.path.abspath(__file__))
 
 # Now continue with the rest of your imports and code...
 # Import Car class and API functions/constants from car_API.py
-from car_API import Car, retrieve_car_details
+from src.car_API import Car, retrieve_car_details
 
 # Here we are loading the KivyMD design file for the UI layout
 Builder.load_file(os.path.join(BASE_PATH, "car_app_design.kv"))
