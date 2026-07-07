@@ -1,7 +1,7 @@
 import sqlite3
 
 class DatabaseManager:
-    def __init__(self, db_name="car_data.db"):
+    def __init__(self, db_name="database/car_data.db"):
         # Establish the connection and initialize the cursor
         self.conn = sqlite3.connect(db_name)
         self.cursor = self.conn.cursor()

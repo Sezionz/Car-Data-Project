@@ -1,5 +1,5 @@
 import csv
-from src.database_manager import DatabaseManager
+from database_manager import DatabaseManager
 
 def ingest_csv_to_db(csv_file_path):
     db_manager = DatabaseManager()

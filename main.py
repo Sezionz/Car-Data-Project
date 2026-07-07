@@ -18,9 +18,14 @@ import os
 import sys
 import joblib # For loading the model
 import pandas as pd # For creating the DataFrame for prediction
+from src.database_manager import DatabaseManager
+from src.prediction_utils import prepare_car_for_model
 
 # This is the new code to ensure the app always finds its files
 BASE_PATH = os.path.dirname(os.path.abspath(__file__))
+DATA_PATH = os.path.join(BASE_PATH, "data")
+MODEL_PATH = os.path.join(BASE_PATH, "models")
+UI_PATH = os.path.join(BASE_PATH, "ui")
 
 
 
@@ -29,7 +34,7 @@ BASE_PATH = os.path.dirname(os.path.abspath(__file__))
 from src.car_API import Car, retrieve_car_details
 
 # Here we are loading the KivyMD design file for the UI layout
-Builder.load_file(os.path.join(BASE_PATH, "car_app_design.kv"))
+Builder.load_file(os.path.join(BASE_PATH, "ui", "car_app_design.kv"))
 
 class CarSearchLayout(MDBoxLayout):
     """
@@ -41,6 +46,7 @@ class CarSearchLayout(MDBoxLayout):
     comparison_car_1 = ObjectProperty(None, allownone=True)
     comparison_car_2 = ObjectProperty(None, allownone=True)
 
+
     def toggle_theme(self):
         """
         Switches between light and dark theme.
@@ -48,6 +54,12 @@ class CarSearchLayout(MDBoxLayout):
         """
         app = MDApp.get_running_app()
         app.switch_theme()
+
+    def update_display(self,records):
+        """
+        Updates the display with the number of records in the database.
+        """
+        self.ids.status_label.text = f"[color=008000]Database has {records} records.[/color]"
 
     def search_car(self):
         """
@@ -169,6 +181,7 @@ class CarSearchLayout(MDBoxLayout):
                     car1_details += f"{display_key}: {val1 if val1 is not None else 'N/A'}\n"
                     car2_details += f"{display_key}: {val2 if val2 is not None else 'N/A'}\n"
 
+
         self.ids.car_1_label.text = car1_details
         self.ids.car_2_label.text = car2_details
 
@@ -185,6 +198,26 @@ class CarAppMain(MDApp):
         self.theme_cls.theme_style = "Dark"
         self.theme_cls.primary_palette = "Blue"
         return CarSearchLayout()
+    
+    def on_start(self):
+        # Initialize the database connection when the app starts
+        self.db_manager = DatabaseManager('database/car_data.db')
+        print("Database connection successfully initialized via CarAppMain.on_start()")
+
+        count = self.get_car_count()
+        self.root.update_display(count)
+
+
+    def get_car_count(self):
+        """
+        Returns the total number of car records in the database.
+        """
+        if hasattr(self, 'db_manager'):
+            records = self.db_manager.fetch_all_records()
+            return len(records)
+        else:
+            print("Database manager not initialized.")
+            return 0
 
     def switch_theme(self):
         root = self.root
@@ -202,21 +235,21 @@ class CarAppMain(MDApp):
         # Here we update the status label
         self.root.ids.status_label.text = "Generating plot ....."
 
-        csv_path = os.path.join(BASE_PATH, "car_data.csv")
-        plot_path = os.path.join(BASE_PATH, "avg_cylinders_plot.png")
+        csv_path = os.path.join(DATA_PATH, "car_data.csv")
+        plot_path = os.path.join(UI_PATH, "avg_cylinders_plot.png")
 
         # Peform data analysis to get cleaned data frame
-        df = perform_data_analysis(os.path.join(BASE_PATH, "car_data.csv"))
+        df = perform_data_analysis(csv_path)
 
         #Check if the data fram was loaded properly
         print(f"DataFrame loaded: {df is not None}")
 
         if df is not None:
             # Now we generate the plot and save it to an image file
-            generate_cylinders_plot(df, os.path.join(BASE_PATH, "avg_cylinders_plot.png"))
+            generate_cylinders_plot(df, plot_path)
 
             # Then we update the kivy image widget to display the new plot
-            self.root.ids.plot_image.source = "avg_cylinders_plot.png"
+            self.root.ids.plot_image.source = plot_path
             self.root.ids.plot_image.reload()
             self.root.ids.status_label.text =  "Plot generated successfully"
         else:
@@ -232,9 +265,16 @@ class CarAppMain(MDApp):
             return
 
         try:
-            # 1. Get Mileage Input
-            mileage_str = self.root.ids.mileage_input.text.strip()
-            mileage = int(mileage_str)
+            # 1. If the car has cylinders or displacement we will use them, otherwise we will set them to 0 for electric cars. Using the prepare_car_for_model function to handle this logic.
+            mileage_input = self.root.ids.mileage_input.text.strip()
+            if not mileage_input:
+                self.root.ids.status_label.text = "[color=ff0000]Please enter mileage for prediction.[/color]"
+                return
+            safe_car_data = prepare_car_for_model(self.root.current_displayed_car, mileage_input)
+
+          
+            
+          
         except ValueError:
             self.root.ids.status_label.text = "[color=ff0000]Please enter a valid mileage (number).[/color]"
             return
@@ -243,7 +283,7 @@ class CarAppMain(MDApp):
             self.root.ids.status_label.text = "[color=0000ff]Predicting price...[/color]"
             
             # Load the model
-            model_path = os.path.join(BASE_PATH, "car_price_model.joblib")
+            model_path = os.path.join(MODEL_PATH, "final_model.joblib")
             model = joblib.load(model_path)
             
             car = self.root.current_displayed_car
@@ -251,21 +291,10 @@ class CarAppMain(MDApp):
             # 2. Prepare Data for Prediction
             # The model expects a DataFrame with specific columns, even for one row.
             
-            # Safely convert cylinders/displacement to 0 for electric cars
-            cylinders = int(getattr(car, 'cylinders', 0) or 0)
-            displacement = float(getattr(car, 'displacement', 0.0) or 0.0)
             
-            input_data = pd.DataFrame({
-                'make': [car.make], 
-                'model': [car.model], 
-                'year': [car.year], 
-                'cylinders': [cylinders],
-                'displacement': [displacement], 
-                'mileage': [mileage]
-            })
-
+          
             # 3. Make Prediction
-            predicted_price = model.predict(input_data)[0]
+            predicted_price = model.predict(safe_car_data)[0]  # Get the first (and only) prediction from the array
             
             # 4. Display Result
             formatted_price = f"${predicted_price:,.2f}"
