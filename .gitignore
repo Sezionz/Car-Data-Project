@@ -4,3 +4,4 @@ __pycache__/
 .DS_Store
 database/*.db
 models/*.joblib
+car_data_env/*
