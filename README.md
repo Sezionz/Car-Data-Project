@@ -1,93 +1,97 @@
-Car Data Explorer & Analytics Dashboard
+# 🚗 Car Data Explorer & Analytics Dashboard
 
-A cross-platform desktop application that provides end-to-end data processing, visualization, and predictive analysis for automotive data.
-🚀 Project Overview
+![Python](https://img.shields.io/badge/Python-3.10%2B-blue)
+![scikit-learn](https://img.shields.io/badge/scikit--learn-Machine%20Learning-orange)
+![KivyMD](https://img.shields.io/badge/KivyMD-GUI-green)
+![SQLite](https://img.shields.io/badge/SQLite-Database-lightgrey)
 
-The Car Data Explorer is a modular data science project that transforms raw automotive API data into actionable insights and price predictions. This project demonstrates competency in Data Engineering (scraping/ingestion), EDA (visualizing correlations), and ML Engineering (pipeline creation and model deployment).
-📊 Technical Highlights
+An end-to-end desktop application that combines **Data Engineering**, **Machine Learning**, and **Exploratory Data Analysis (EDA)** to provide actionable insights into the automotive market. 
 
-    Pipeline Architecture: Implemented a modular structure separating data collection, cleaning, and model inference.
+## 🚀 Project Overview
 
-    Data Quality: Built defensive programming checks to handle missing data and API inconsistencies during ingestion.
+The Car Data Explorer is designed to transform raw automotive API data into a clean, interactive user experience. Rather than running scripts in a Jupyter Notebook, this project packages a full Machine Learning prediction pipeline and analytical dashboard into a standalone cross-platform GUI.
 
-    ML Integration: Leveraged scikit-learn Pipelines to encapsulate preprocessing (scaling/encoding) and model execution, ensuring production-ready prediction workflows.
+### ✨ Key Features
 
-    Cross-Platform UI: Built with KivyMD, demonstrating the ability to package Python code into a functional desktop application.
+* **🔍 Interactive Car Search & Comparison:** Query live car specifications and compare technical metrics (horsepower, displacement, MPG) side-by-side.
+* **🤖 Price Prediction Engine:** Integrates a Scikit-Learn `Pipeline` (Linear Regression + OneHotEncoding) to predict car valuations based on make, model, and mileage.
+* **📊 Automated EDA:** Generates and displays visual analytics (e.g., average cylinders by make) dynamically within the application.
+* **🗄️ Custom SQLite Backend:** Features a custom `DatabaseManager` for automated data ingestion, batch processing, and persistent storage.
+* **⚡ Asynchronous GUI:** Built with KivyMD, utilizing multi-threading to ensure the UI remains responsive during API calls and database queries.
 
-🛠️ Technology Stack
+## 🏗️ Architecture & Project Structure
 
-    Core: Python
+The repository is modularized to separate the UI layer from the data and machine learning logic:
 
-    GUI: Kivy / KivyMD
+```text
+Car-Data-Project/
+│
+├── main.py                   # App orchestrator & KivyMD GUI layer
+├── requirements.txt          # Project dependencies
+│
+├── src/                      # Backend Logic
+│   ├── dataset_ingester.py   # ETL pipeline for API/CSV ingestion
+│   ├── database_manager.py   # SQLite connection and CRUD operations
+│   ├── ml_pipeline.py        # Scikit-Learn model training & serialization
+│   ├── data_analyser.py      # Pandas & Matplotlib EDA logic
+│   ├── car_API.py            # API request handling
+│   └── prediction_utils.py   # Data formatting for ML inference
+│
+├── database/                 # SQLite .db files
+├── data/                     # Raw CSV datasets
+├── models/                   # Serialized .joblib ML models
+└── ui/                       # .kv design files and plot outputs
 
-    Data Science: pandas, matplotlib, scikit-learn
 
-    Backend/DevOps: requests, joblib, SQLite
 
-⚙️ Setup and Installation
-Prerequisites
 
-    Python 3.10+
 
-    Git
 
-Installation
 
-    Clone the repository:
-    Bash
+## ⚙️ Setup and Installation
 
-    git clone https://github.com/Sezionz/Car-Data-Project.git
-    cd Car-Data-Project
+1. Clone the Repo:
 
-    Setup Virtual Environment:
-    Bash
+git clone [https://github.com/YourUsername/Car-Data-Project.git](https://github.com/YourUsername/Car-Data-Project.git)
+cd Car-Data-Project
 
-    python -m venv car_data_env
-    # On Windows:
-    .\car_data_env\Scripts\activate
-    # On macOS/Linux:
-    source car_data_env/bin/activate
+2. Set up the necessary environments
+python -m venv venv
+# Windows:
+.\venv\Scripts\activate
+# macOS/Linux:
+source venv/bin/activate
 
-    Install Dependencies:
-    Bash
 
-    pip install -r requirements.txt
+3. Install the dependecies
+pip install -r requirements.txt
 
-🚀 How to Run
+4. This project requires an API key from API-Ninjas. Update the src/car_API.py file with your credentials.
 
-    Configure API: Obtain an API key from API-Ninjas and update car_API.py with your credentials.
 
-    Process Data: Run the ingestion pipeline:
-    Bash
+## 🏃‍♂️ How to Run the Pipeline
 
-    python src/dataset_ingester.py
+To use the application, you must execute the pipeline in the correct order:
 
-    Launch the App:
-    Bash
+1. Ingest Data: Populate the SQLite database with raw car data.
+Bash
 
-    python main.py
+python src/dataset_ingester.py
 
-📈 Key Findings (EDA)
+2. Train the ML Model: Train the Scikit-Learn pipeline and serialize it to the models/ directory.
+Bash
 
-[Insert a short description of the most interesting insight you found from your analysis here. Example: "Our EDA revealed a non-linear correlation between car age and depreciation, which informed our feature engineering for the price predictor."]
-🚧 Project Roadmap
+python src/ml_pipeline.py
 
-    [x] Data Ingestion & Database setup
+3. Launch the Dashboard: Start the KivyMD application.
+Bash
 
-    [x] Basic UI with KivyMD
+python main.py
 
-    [x] Initial EDA Visualizations
+##📈 Future Enhancements
 
-    [ ] Model Refinement (Current Focus: Hyperparameter tuning)
+    Advanced ML Models: Upgrade the predictive engine from Linear Regression to XGBoost or Random Forest for higher accuracy.
 
-    [ ] Database Persistence (Adding SQLite to save session state)
+    Hyperparameter Tuning: Implement GridSearchCV within the training pipeline.
 
-Why these changes work:
-
-    The "Hook": By calling it a "Data Science Project" in the overview, you shift the focus from "I built an app" to "I built a data tool."
-
-    The "Pipeline" language: Recruiters look for keywords like Data Engineering, Pipeline, EDA, and ML Engineering. These are now clearly highlighted.
-
-    Reproducibility: By adding the requirements.txt installation step, you show you understand professional coding workflows.
-
-    Visuals: I added a placeholder for your avg_cylinders_plot.png. Make sure you actually place your image in the ui/ folder and include it in your repo. Visuals are the #1 way to get someone to read your code.
+    Session State Persistence: Expand the SQLite schema to save user search history and previous vehicle comparisons.
