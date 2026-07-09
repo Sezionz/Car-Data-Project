@@ -5,3 +5,4 @@ __pycache__/
 database/*.db
 models/*.joblib
 car_data_env/*
+memory/*
