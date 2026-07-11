@@ -23,7 +23,6 @@ The Car Data Explorer is designed to transform raw automotive API data into a cl
 
 The repository is modularized to separate the UI layer from the data and machine learning logic:
 
-```text
 Car-Data-Project/
 │
 ├── main.py                   # App orchestrator & KivyMD GUI layer
@@ -44,49 +43,45 @@ Car-Data-Project/
 
 
 
-
-
-
-
 ## ⚙️ Setup and Installation
 
-1. Clone the Repo:
-
-git clone [https://github.com/YourUsername/Car-Data-Project.git](https://github.com/YourUsername/Car-Data-Project.git)
-cd Car-Data-Project
-
-2. Set up the necessary environments
-python -m venv venv
-# Windows:
-.\venv\Scripts\activate
-# macOS/Linux:
-source venv/bin/activate
-
-
-3. Install the dependecies
-pip install -r requirements.txt
-
-4. This project requires an API key from API-Ninjas. Update the src/car_API.py file with your credentials.
+    1. Clone the Repo:
+    
+    git clone [https://github.com/YourUsername/Car-Data-Project.git](https://github.com/YourUsername/Car-Data-Project.git)
+    cd Car-Data-Project
+    
+    2. Set up the necessary environments
+    python -m venv venv
+    # Windows:
+    .\venv\Scripts\activate
+    # macOS/Linux:
+    source venv/bin/activate
+    
+    
+    3. Install the dependecies
+    pip install -r requirements.txt
+    
+    4. This project requires an API key from API-Ninjas. Update the src/car_API.py file with your credentials.
 
 
 ## 🏃‍♂️ How to Run the Pipeline
 
-To use the application, you must execute the pipeline in the correct order:
-
-1. Ingest Data: Populate the SQLite database with raw car data.
-Bash
-
-python src/dataset_ingester.py
-
-2. Train the ML Model: Train the Scikit-Learn pipeline and serialize it to the models/ directory.
-Bash
-
-python src/ml_pipeline.py
-
-3. Launch the Dashboard: Start the KivyMD application.
-Bash
-
-python main.py
+    To use the application, you must execute the pipeline in the correct order:
+    
+    1. Ingest Data: Populate the SQLite database with raw car data.
+    Bash
+    
+    python src/dataset_ingester.py
+    
+    2. Train the ML Model: Train the Scikit-Learn pipeline and serialize it to the models/ directory.
+    Bash
+    
+    python src/ml_pipeline.py
+    
+    3. Launch the Dashboard: Start the KivyMD application.
+    Bash
+    
+    python main.py
 
 ##📈 Future Enhancements
 
