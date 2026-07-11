@@ -122,4 +122,3 @@ The frontend application was developed using **KivyMD** to provide a clean, cros
 
 
     
-## 
