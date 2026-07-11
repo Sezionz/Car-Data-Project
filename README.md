@@ -95,3 +95,36 @@ python main.py
     Hyperparameter Tuning: Implement GridSearchCV within the training pipeline.
 
     Session State Persistence: Expand the SQLite schema to save user search history and previous vehicle comparisons.
+
+
+
+
+
+### 📊 Exploratory Data Analysis (EDA)
+To ensure the machine learning pipeline is fed high-quality, normalized data, this project includes a comprehensive EDA phase. Before training the model, the dataset was analyzed to:
+* **Map Feature Correlations:** Identifying which variables (like mileage and year) most strongly impact car prices.
+* **Check for Multicollinearity:** Ensuring the features fed into the `scikit-learn` model are distinct to prevent model confusion and overfitting.
+* **Analyze Distributions:** Visualizing the target variable (price) and identifying any data skews or outliers in the UK used car market.
+
+![Bar Chart for Data Visualisation](ui/avg_cylinders_plot.png)
+
+**[🔗 View the full EDA Notebook here](notebooks/eda_car_price_analysis.ipynb)**
+
+
+
+
+
+### 🖥️ Interactive Dashboard (KivyMD)
+The frontend application was developed using **KivyMD** to provide a clean, cross-platform Material Design interface. Rather than a standard terminal script, this UI makes the data accessible and interactive:
+* **Asynchronous Execution:** Database queries, API calls, and ML inferences are routed through background threads, ensuring the application remains perfectly smooth and never freezes during heavy calculations.
+* **Side-by-Side Comparison:** Users can store vehicles in memory slots to compare technical specifications (horsepower, MPG, etc.), with the app automatically highlighting the superior metrics.
+* **Real-Time Valuations:** The dashboard hooks directly into the serialized `scikit-learn` model, allowing users to input custom mileage and instantly receive a predicted market price.
+
+![Car Dashboard Interface](ui/UI_SS1.png)
+![Car Dashboard Interface with Infor](ui/UI_SS3.png)
+
+
+
+
+    
+## 

@@ -19,9 +19,36 @@ class DatabaseManager:
                 engine_size REAL,
                 price REAL
                 );""")
+        
+
+    def _validate_schema(self, make, model, mileage, engine_size, price):
+        """
+        Advanced Validation: Ensures data integrity before SQLite insertion.
+        Raises ValueError if schema requirements are not met.
+        """
+        if not isinstance(make, str) or not make.strip():
+            raise ValueError(f"Schema Error: 'make' must be a valid string. Got: {make}")
+        
+        if not isinstance(model, str) or not model.strip():
+            raise ValueError(f"Schema Error: 'model' must be a valid string. Got: {model}")
+        
+        # Mileage can be 0 (brand new), but not negative
+        if not isinstance(mileage, (int, float)) or mileage < 0:
+            raise ValueError(f"Schema Error: 'mileage' must be a positive number. Got: {mileage}")
+            
+        if not isinstance(engine_size, (int, float)) or engine_size < 0:
+            raise ValueError(f"Schema Error: 'engine_size' must be a positive number. Got: {engine_size}")
+            
+        if not isinstance(price, (int, float)) or price <= 0:
+            raise ValueError(f"Schema Error: 'price' must be greater than zero. Got: {price}")
     # This is here to commit one row at a time
+
+
+
+    
     def insert_record(self, make, model, mileage, engine_size, price):
         # The automated insertion logic goes here
+        self._validate_schema(make, model, mileage, engine_size, price)
         self.cursor.execute("""
             INSERT INTO cars (make, model, mileage, engine_size, price)
             VALUES (?, ?, ?, ?, ?)

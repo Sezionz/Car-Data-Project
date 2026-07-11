@@ -297,7 +297,7 @@ class CarAppMain(MDApp):
             predicted_price = model.predict(safe_car_data)[0]  # Get the first (and only) prediction from the array
             
             # 4. Display Result
-            formatted_price = f"${predicted_price:,.2f}"
+            formatted_price = f"£{predicted_price:,.2f}"
             self.root.ids.status_label.text = f"[color=008000]Predicted Price:[/color] [b]{formatted_price}[/b]"
 
         except FileNotFoundError:
