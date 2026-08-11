@@ -47,7 +47,7 @@ Car-Data-Project/
 
     1. Clone the Repo:
     
-    git clone [https://github.com/YourUsername/Car-Data-Project.git](https://github.com/YourUsername/Car-Data-Project.git)
+    git clone https://github.com/Sezionz/Car-Data-Project.git
     cd Car-Data-Project
     
     2. Set up the necessary environments
