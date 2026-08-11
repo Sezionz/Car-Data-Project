@@ -1,0 +1,15 @@
+# docker-compose.yml - Orchestrates FastAPI backend API server and SQLite data persistence
+
+
+services:
+  # === Service 1: FastAPI Backend Server (Microservice) ===
+  api-server:
+    build: .           # Build from Dockerfile in current directory
+    ports:             # Expose to host network for local KivyMD client connection
+      - "8000:8000"    # Maps port 8000 on your machine -> container's FastAPI server
+    volumes:            # Persist car data files (database/, data/) outside container
+      - ./database:/app/database     # SQLite .db files survive restarts
+      - ./data:/app/data             # Raw CSV datasets stay synced with host
+      - ./models:/app/models         # Trained ML models persist across runs
+    environment:        # Optional: Override runtime config from env vars (e.g., API key)
+      - PYTHONUNBUFFERED=1  # Stream logs for debugging during dev
