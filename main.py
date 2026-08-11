@@ -16,10 +16,9 @@ from kivy.properties import ObjectProperty
 from src.data_analyser import perform_data_analysis, generate_cylinders_plot
 import os
 import sys
-import joblib # For loading the model
-import pandas as pd # For creating the DataFrame for prediction
+
 from src.database_manager import DatabaseManager
-from src.prediction_utils import prepare_car_for_model
+
 
 # This is the new code to ensure the app always finds its files
 BASE_PATH = os.path.dirname(os.path.abspath(__file__))
@@ -29,9 +28,6 @@ UI_PATH = os.path.join(BASE_PATH, "ui")
 
 
 
-# Now continue with the rest of your imports and code...
-# Import Car class and API functions/constants from car_API.py
-from src.car_API import Car, retrieve_car_details
 
 # Here we are loading the KivyMD design file for the UI layout
 Builder.load_file(os.path.join(BASE_PATH, "ui", "car_app_design.kv"))
@@ -84,84 +80,124 @@ class CarSearchLayout(MDBoxLayout):
         Thread(target=self.do_search_async, args=(make, model, int_year)).start()
 
     def do_search_async(self, make, model, year):
-        car_item = retrieve_car_details(make, model, year)
-        kivy.clock.Clock.schedule_once(lambda dt: self.update_gui_after_search(car_item, make, model), 0)
+        """
+        Microservice Client: Fetches data from the Docker API on a background thread.
+        """
+        api_url = "http://127.0.0.1:8000/api/v1/get_car"
+        search_params = {
+            "make": make,
+            "model": model,
+            "year": year
+        }
 
-    def update_gui_after_search(self, car_item, make, model):
+        try:
+            response = requests.get(api_url, params=search_params)
+            response.raise_for_status() 
+            
+            # Extract the JSON payload
+            car_data = response.json()
+            
+            # Pass the raw dictionary to the UI thread, NOT a formatted string
+            kivy.clock.Clock.schedule_once(lambda dt: self.update_gui_after_search(car_data, make, model), 0)
+            
+        except requests.exceptions.HTTPError:
+            error_msg = "[color=ff0000]Error: Car not found in the database.[/color]"
+            kivy.clock.Clock.schedule_once(lambda dt: self.update_gui_after_search(error_msg, make, model), 0)
+            
+        except requests.exceptions.ConnectionError:
+            error_msg = "[color=ff0000]Error: Backend server is offline.[/color]"
+            kivy.clock.Clock.schedule_once(lambda dt: self.update_gui_after_search(error_msg, make, model), 0)
+
+            
+    def update_gui_after_search(self, payload, make, model):
         """
-        Updates the UI with car details or error message after search.
+        Updates the UI and saves the JSON dictionary to local memory for predictions.
         """
-        # Clear previous comparison slots, but not the search result label.
         self.ids.single_result_label.text = ""
         self.current_displayed_car = None
 
-        if car_item:
-            self.current_displayed_car = car_item
-            display_text = f"[b]{car_item.make.title()} {car_item.model.title()} ({car_item.year})[/b]\n\n{car_item.make_data_readable()}"
-            # This line correctly sets the text with the car's details.
-            self.ids.single_result_label.text = display_text
-            self.ids.status_label.text = f"[color=008000]Found a car for {make} {model}![/color]"
+        # Check if the network thread passed us a string error message
+        if isinstance(payload, str) and "Error:" in payload:
+            self.ids.status_label.text = payload
+            self.current_car_data = None
         else:
-            # If no car found, clear the single result label and show an error message.
-            self.ids.single_result_label.text = ""
-            self.ids.status_label.text = f"[color=ff0000]No car found for {make} {model}.[/color]"
-            self.current_displayed_car = None
+            # STATE MANAGEMENT: Save the raw JSON dictionary to the app's memory
+            self.current_car_data = payload
+
+            # Format the dictionary into a readable string for the UI
+            formatted_data = "\n".join([f"{k.replace('_', ' ').title()}: {v}" for k, v in payload.items() if v])
+            display_text = f"[b]{make.title()} {model.title()}[/b]\n\n{formatted_data}"
+            
+            self.ids.single_result_label.text = display_text
+            self.ids.status_label.text = f"[color=008000]Found a car for {make.title()} {model.title()}![/color]"
     
     def select_car_for_comparison(self, instance, slot):
-        if not self.current_displayed_car:
+        """
+        Extracts the raw JSON dictionary saved from the API search 
+        and routes it to the correct comparison slot.
+        """
+        # 1. State Check: Ensure we have JSON data in memory
+        if not hasattr(self, 'current_car_data') or not self.current_car_data:
             self.ids.status_label.text = "[color=ff0000]No car to select. Please search for a car first.[/color]"
             return
 
-        if slot == 1:
-            self.comparison_car_1 = self.current_displayed_car
-            self.ids.car_1_label.text = f"[b]Car 1: {self.comparison_car_1.make.title()} {self.comparison_car_1.model.title()} ({self.comparison_car_1.year})[/b]\n\n{self.comparison_car_1.make_data_readable()}"
-            self.ids.status_label.text = f"[color=008000]Car '{self.comparison_car_1.make.title()} {self.comparison_car_1.model.title()}' selected for Slot 1.[/color]"
-        elif slot == 2:
-            self.comparison_car_2 = self.current_displayed_car
-            self.ids.car_2_label.text = f"[b]Car 2: {self.comparison_car_2.make.title()} {self.comparison_car_2.model.title()} ({self.comparison_car_2.year})[/b]\n\n{self.comparison_car_2.make_data_readable()}"
-            self.ids.status_label.text = f"[color=008000]Car '{self.comparison_car_2.make.title()} {self.comparison_car_2.model.title()}' selected for Slot 2.[/color]"
+        # 2. Extract the raw dictionary
+        car_data = self.current_car_data
+        
+        # Safely extract make and model, falling back to the input fields if missing
+        make = car_data.get('make', self.ids.make_input.text.strip()).title()
+        model = car_data.get('model', self.ids.model_input.text.strip()).title()
+        
+        # 3. Format the JSON dictionary for display
+        formatted_data = "\n".join([f"{k.replace('_', ' ').title()}: {v}" for k, v in car_data.items() if v])
+        display_text = f"[b]{make} {model}[/b]\n\n{formatted_data}"
 
-            # Check if both slots are filled and then initiate the comparison.
+        if slot == 1:
+            self.comparison_car_1 = car_data
+            self.ids.car_1_label.text = f"[b]Car 1:[/b]\n{display_text}"
+            self.ids.status_label.text = f"[color=008000]Car '{make} {model}' selected for Slot 1.[/color]"
+        elif slot == 2:
+            self.comparison_car_2 = car_data
+            self.ids.car_2_label.text = f"[b]Car 2:[/b]\n{display_text}"
+            self.ids.status_label.text = f"[color=008000]Car '{make} {model}' selected for Slot 2.[/color]"
+
+        # Initiate comparison if both slots are populated
         if self.comparison_car_1 and self.comparison_car_2:
             self.compare_cars()
 
-    def clear_comparison(self):
-        self.comparison_car_1 = None
-        self.comparison_car_2 = None
-        self.ids.car_1_label.text = "Slot 1: Empty"
-        self.ids.car_2_label.text = "Slot 2: Empty"
-        self.ids.status_label.text = "Comparison slots cleared."
-
     def compare_cars(self):
         """
-        This function compares the two selected cars and displays their details side by side.
-        It also highlights differences in specifications.
+        Iterates through two JSON dictionaries, parses numerical values, 
+        and highlights the statistical differences in the UI.
         """
         car1 = self.comparison_car_1
         car2 = self.comparison_car_2
 
+        # Fixed spelling of displacement
         comparison_keys = [
-            'horsepower', 'cylinders', 'displaxement', 'city_mpg', 'highway_mpg', 'transmission', 'drive', 'fuel_type'
+            'horsepower', 'cylinders', 'displacement', 'city_mpg', 'highway_mpg', 'transmission', 'drive', 'fuel_type'
         ]
-        # here we build the comparison text
-        car1_details = f"[b]Car 1: {car1.make.title()} {car1.model.title()} ({car1.year})[/b]\n\n" if car1 else "Car 1: Empty\n\n" 
-        car2_details = f"[b]Car 2: {car2.make.title()} {car2.model.title()} ({car2.year})[/b]\n\n" if car2 else "Car 2: Empty\n\n"
+        
+        c1_name = f"{car1.get('make', 'Car 1').title()} {car1.get('model', '').title()}"
+        c2_name = f"{car2.get('make', 'Car 2').title()} {car2.get('model', '').title()}"
+
+        car1_details = f"[b]{c1_name}[/b]\n\n"
+        car2_details = f"[b]{c2_name}[/b]\n\n"
         
         for key in comparison_keys:
-            val1 = getattr(car1, key, None)
-            val2 = getattr(car2, key, None)
+            # Dictionary extraction: using .get() instead of getattr()
+            val1 = car1.get(key)
+            val2 = car2.get(key)
             display_key = key.replace('_', ' ').title()
 
-
-            #Here we try to convert to float for numeric comparison
             try:
                 num_val1 = float(val1) if val1 is not None else None
                 num_val2 = float(val2) if val2 is not None else None
-            except (ValueError, TypeError): #But if it fails, we just set them to None and fall back to string comparison
+            except (ValueError, TypeError): 
                 num_val1 = None
                 num_val2 = None
-
             
+            # The mathematical comparison logic remains identical
             if num_val1 is not None and num_val2 is not None:
                 if num_val1 > num_val2:
                     car1_details += f"[color=008000]{display_key}: {val1}[/color]\n"
@@ -173,7 +209,6 @@ class CarSearchLayout(MDBoxLayout):
                     car1_details += f"{display_key}: {val1}\n"
                     car2_details += f"{display_key}: {val2}\n"
             else:
-                # Fallback for non-numerical or non-existent data
                 if val1 is not None and val2 is not None and val1 != val2:
                     car1_details += f"[b]{display_key}: {val1}[/b]\n"
                     car2_details += f"[b]{display_key}: {val2}[/b]\n"
@@ -181,16 +216,9 @@ class CarSearchLayout(MDBoxLayout):
                     car1_details += f"{display_key}: {val1 if val1 is not None else 'N/A'}\n"
                     car2_details += f"{display_key}: {val2 if val2 is not None else 'N/A'}\n"
 
-
         self.ids.car_1_label.text = car1_details
         self.ids.car_2_label.text = car2_details
-
         self.ids.status_label.text = "[color=008000]Comparison complete![/color]"
-
-        self.ids.car_1_label.text = car1_details
-        self.ids.car_2_label.text = car2_details
-
-        self.ids.status_label.text = "[color=008000]Comparison updated.[/color]"
 
 
 class CarAppMain(MDApp):
@@ -255,56 +283,76 @@ class CarAppMain(MDApp):
         else:
             self.root.ids.status_label.text = "Failed to generate plot. Check if you made any erros"
             self.root.ids.plot_image.source = ""
-
     def predict_car_price(self):
         """
-        Loads the saved ML model and predicts the price of the currently displayed car.
+        Gathers the stored JSON state and user mileage, then pings the Docker container.
         """
-        if not self.root.current_displayed_car:
+        # 1. Check the memory state we saved during the search
+        if not hasattr(self.root, 'current_car_data') or not self.root.current_car_data:
             self.root.ids.status_label.text = "[color=ff0000]Search for a car before predicting.[/color]"
             return
 
-        try:
-            # 1. If the car has cylinders or displacement we will use them, otherwise we will set them to 0 for electric cars. Using the prepare_car_for_model function to handle this logic.
-            mileage_input = self.root.ids.mileage_input.text.strip()
-            if not mileage_input:
-                self.root.ids.status_label.text = "[color=ff0000]Please enter mileage for prediction.[/color]"
-                return
-            safe_car_data = prepare_car_for_model(self.root.current_displayed_car, mileage_input)
-
-          
-            
-          
-        except ValueError:
-            self.root.ids.status_label.text = "[color=ff0000]Please enter a valid mileage (number).[/color]"
+        mileage_text = self.root.ids.mileage_input.text.strip()
+        if not mileage_text:
+            self.root.ids.status_label.text = "[color=ff0000]Please enter the mileage.[/color]"
             return
 
         try:
-            self.root.ids.status_label.text = "[color=0000ff]Predicting price...[/color]"
+            mileage = int(mileage_text)
+        except ValueError:
+            self.root.ids.status_label.text = "[color=ff0000]Mileage must be a whole number.[/color]"
+            return
+
+        self.root.ids.status_label.text = "[color=0000ff]Running Neural Prediction...[/color]"
+        
+        # 2. Extract features from the saved JSON dictionary
+        car_data = self.root.current_car_data
+        make = car_data.get('make', self.root.ids.make_input.text.strip())
+        model = car_data.get('model', self.root.ids.model_input.text.strip())
+        displacement = car_data.get('displacement', car_data.get('engine_size', 2.0))
+        
+        # 3. Dispatch network request
+        Thread(target=self.do_predict_async, args=(make, model, mileage, displacement)).start()
+
+    def do_predict_async(self, make, model, mileage, displacement):
+        """
+        Microservice Client: Pings the FastAPI Docker endpoint containing the Scikit-Learn model.
+        """
+        api_url = "http://127.0.0.1:8000/api/v1/predict_price"
+        
+        # This payload strictly matches the Pydantic CarFeatures schema we built
+        payload = {
+            "make": make,
+            "model": model,
+            "mileage": mileage,
+            "displacement": float(displacement) if displacement else 2.0
+        }
+
+        try:
+            response = requests.post(api_url, json=payload)
+            response.raise_for_status() 
             
-            # Load the model
-            model_path = os.path.join(MODEL_PATH, "final_model.joblib")
-            model = joblib.load(model_path)
+            prediction_data = response.json()
+            estimated_price = prediction_data.get("estimated_price", 0)
             
-            car = self.root.current_displayed_car
+            # Update the UI safely on the main thread
+            success_msg = f"[color=008000]Predicted Price:[/color] [b]£{estimated_price:,.2f}[/b]"
+            kivy.clock.Clock.schedule_once(lambda dt: self.update_status_label(success_msg), 0)
             
-            # 2. Prepare Data for Prediction
-            # The model expects a DataFrame with specific columns, even for one row.
-            
+        except Exception as e:
+            error_msg = "[color=ff0000]Prediction Error: Server offline or model failed.[/color]"
+            kivy.clock.Clock.schedule_once(lambda dt: self.update_status_label(error_msg), 0)
+
+    def update_status_label(self, message):
+        """Helper method to map text back to the Kivy UI from the background thread."""
+        self.root.ids.status_label.text = message
+        
+
+
+          
             
           
-            # 3. Make Prediction
-            predicted_price = model.predict(safe_car_data)[0]  # Get the first (and only) prediction from the array
-            
-            # 4. Display Result
-            formatted_price = f"£{predicted_price:,.2f}"
-            self.root.ids.status_label.text = f"[color=008000]Predicted Price:[/color] [b]{formatted_price}[/b]"
 
-        except FileNotFoundError:
-            self.root.ids.status_label.text = "[color=ff0000]Error: Model file not found. Run price_predictor.py first.[/color]"
-        except Exception as e:
-            self.root.ids.status_label.text = f"[color=ff0000]Prediction failed due to error: {e}[/color]"
-            print(f"Prediction Runtime Error: {e}")
 
 
 

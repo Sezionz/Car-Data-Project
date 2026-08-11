@@ -59,7 +59,7 @@ Car-Data-Project/
     
     
     3. Install the dependecies
-    pip install -r requirements.txt
+    To run the backend server, use Docker. To run the desktop UI locally, install the frontend dependencies using pip install -r requirements-ui.txt.
     
     4. This project requires an API key from API-Ninjas. Update the src/car_API.py file with your credentials.
 
@@ -109,7 +109,21 @@ To ensure the machine learning pipeline is fed high-quality, normalized data, th
 
 
 
-### 🖥️ Interactive Dashboard (KivyMD)
+
+
+### 🔧 Recent Improvements & Changes (August 2026)
+
+*   **Backend API Modernization:** Upgraded `src/car_API.py` from synchronous script to a production-ready FastAPI microservice. Now serving on port 8000 with async support, Pydantic validation models for input data, and dedicated `/predict_price` endpoint that integrates the serialized ML model directly into HTTP requests.
+
+*   **Docker Support:** Added Dockerfile enabling containerized deployment of backend server (`fastapi` + `uvicorn`) alongside local KivyMD desktop application development, making microservice deployment straightforward via docker-compose or standalone containers.
+
+*   **Dual Requirements Structure:** Split dependencies:
+    - [`requirements.txt`](C:\Users\samiu\Documents\Coded_Programs\Python\Car-Data-Project-master\requirements.txt) → Core backend (FastAPI, uvicorn, scikit-learn, pandas)
+    - [`requirements_UI.txt`](C:\Users\samiu\Documents\Coded_Programs\Python\Car-Data-Project-master\requirements_UI.txt) → Frontend only (KivyMD and GUI), avoiding Kivy in backend venv.
+
+*   **Localization:** Changed price display from USD ($ ) to GBP (£ ), making predictions relevant for UK used car market target audience.
+
+
 The frontend application was developed using **KivyMD** to provide a clean, cross-platform Material Design interface. Rather than a standard terminal script, this UI makes the data accessible and interactive:
 * **Asynchronous Execution:** Database queries, API calls, and ML inferences are routed through background threads, ensuring the application remains perfectly smooth and never freezes during heavy calculations.
 * **Side-by-Side Comparison:** Users can store vehicles in memory slots to compare technical specifications (horsepower, MPG, etc.), with the app automatically highlighting the superior metrics.

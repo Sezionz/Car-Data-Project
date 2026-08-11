@@ -1,8 +1,11 @@
+import joblib
 import requests
 import json
 from src.database_manager import DatabaseManager
-
-
+from fastapi import FastAPI, HTTPException  
+import uvicorn
+from pydantic import BaseModel
+import pandas as pd
 
 
 # --- Configuration ---
@@ -130,42 +133,67 @@ def retrieve_car_details(make: str, model: str, year: int) -> Car | None:
 # This code defines a Car class and a function to retrieve car details from the API-Ninjas Cars API.
 # The Car class has attributes for various car specifications and a method to format the details into a readable string.
 # The retrieve_car_details function makes an API request to get car details based on the make, model, and year, returning a Car object or None if not found. 
-"""
+# Initialize the FastAPI server
+app = FastAPI(title="Car Data API Microservice")
+
+@app.get("/api/v1/get_car")
+def get_car(make: str, model: str, year: int):
+    """
+    FastAPI endpoint that listens for requests from the Kivy frontend.
+    """
+    car = retrieve_car_details(make, model, year)
+    
+    if car:
+        # FastAPI automatically converts Python dictionaries to JSON
+        return car.__dict__ 
+    else:
+        raise HTTPException(status_code=404, detail=f"No data found for {year} {make} {model}")
+
+
+
+# 1. Load the ML Engine into server memory
+try:
+    price_model = joblib.load("models/final_model.joblib")
+except FileNotFoundError:
+    print("Warning: ML Model not found. Prediction endpoint will fail.")
+    price_model = None
+
+# 2. The Architectural Schema (The Checkpoint)
+class CarFeatures(BaseModel):
+    """
+    Strictly validates incoming data against the pipeline's required features.
+    """
+    make: str
+    model: str
+    mileage: int
+    displacement: float
+
+# 3. The Machine Learning Endpoint
+@app.post("/api/v1/predict_price")
+def predict_price(features: CarFeatures):
+    """
+    Receives validated vehicle specs, formats them into a Pandas DataFrame,
+    feeds them to the Scikit-Learn pipeline, and returns the valuation.
+    """
+    if price_model is None:
+        raise HTTPException(status_code=500, detail="ML Model offline.")
+
+    try:
+        # Transform the Pydantic object into a DataFrame matching your training ETL
+        input_df = pd.DataFrame([{
+            "make": features.make,
+            "model": features.model,
+            "mileage": features.mileage,
+            "displacement": features.displacement
+        }])
+        
+        predicted_value = price_model.predict(input_df)[0]
+        
+        return {"estimated_price": round(predicted_value, 2)}
+        
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Prediction error: {str(e)}")
+
 if __name__ == "__main__":
-    print("--- Testing get_car_details function ---")
-    
-    # Test Case 1: A successful search for a known car
-    print("\nAttempting to find a Audi A4 2020...")
-    car1 = retrieve_car_details(make='audi', model='a4', year=2020)
-    if car1:
-        print("Success! Car found.")
-        print(car1.make_data_readable())
-    else:
-        print("Failed to find the car.")
-        
-    print("\n" + "="*40)
-    
-    # Test Case 2: A search for a car that does not exist
-    print("\nAttempting to find a Ford Piston 2025...")
-    car2 = retrieve_car_details(make='ford', model='piston', year=2025)
-    if car2:
-        print("Success! Car found.")
-        print(car2.make_data_readable())
-    else:
-        print("Failed as expected. Car not found.")
-        
-    print("\n" + "="*40)
-    
-    # Test Case 3: A search with an invalid API key (if you temporarily use a fake key)
-    print("\nAttempting a search with an invalid API key...")
-    # To test this, you would temporarily change your API_KEY variable
-    # to something incorrect, then change it back after the test.
-    # Note: This will likely return an HTTPError.
-    
-    # For now, we will just print a message about the test case
-    print("This test case requires temporarily changing the API_KEY variable to an invalid value.")
-    print("You would expect an error message like 'HTTP Error: 403 Client Error: Forbidden for url...'")
-    
-    print("\n--- End of tests ---")
-    # This code is for testing purposes and should not be run in production.
-"""
+    # This runs the server locally on port 8000
+    uvicorn.run(app, host="0.0.0.0", port=8000)
